@@ -9,6 +9,12 @@ author: Team members names
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+```
+
 ## Instructions:
 
 In this R Markdown document, you and your team will create a fully reproducible analysis with the goal of assessing and interpreting the replicability of two pharmacogenomic experiments. This document should contain all of the text and code of your analyses, which will allow others to run, interpret, and reuse your work.
@@ -19,6 +25,8 @@ For each answer, include text by simply typing below the question. Include code 
 
 ```{r}
 #Your code goes here
+setwd('/Users/christopherayala/Documents/internship2020/PR2020replicathon')
+pharmacoData <- readRDS(file.path( "data", "rawPharmacoData.rds"))
 ```
 
 You may find it helpful to use the version control and code sharing system called GitHub to work together with your team so that all of you can edit the same document and keep track of its changes. Here is a [setup guide](https://github.com/datasciencelabs/2016/blob/master/lectures/git-and-github/setting-up-git.Rmd) and [brief introduction to Git and GitHub](https://github.com/datasciencelabs/2016/blob/master/lectures/git-and-github/version-control.Rmd) from another course. The mentors will be able to help if you run into problems. 
@@ -29,7 +37,36 @@ You may find it helpful to use the version control and code sharing system calle
 
 1. How many cell-lines are contained in the data?
 
+```{r}
+head(pharmacoData)
+str(pharmacoData)
+length(unique(pharmacoData$cellLine))
+```
+There are 288 cell lines contained in the data. 
+
+
 2. What drug concentrations were used in each study?
+
+```{r}
+drugConcPerStudy <- select(pharmacoData, study, concentration, drug)
+drugConcPerStudy
+
+drugConcPerStudy %>%
+    group_by(study, concentration, drug) %>%
+    summarize(n())
+
+allDrugConcPerStudy <- drugConcPerStudy %>%
+    group_by(study, drug) %>%
+    summarize(meanDrugConc=mean(concentration), maxDrugConc=max(concentration), minDrugConc=min(concentration), n())
+allDrugConcPerStudy
+
+summDrugConcPerStudy <- drugConcPerStudy %>%
+    group_by(study) %>%
+    summarize(meanDrugConc=mean(concentration), maxDrugConc=max(concentration), minDrugConc=min(concentration), concentration= n_distinct(concentration), drugTypes=n_distinct(drug), n())
+summDrugConcPerStudy
+```
+
+
 
 3. Histograms, appart from telling us how the data is
 distributed, can also make evident potential
