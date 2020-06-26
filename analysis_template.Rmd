@@ -10,8 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(tidyverse)
-library(ggplot2)
+#library(tidyverse)
+#library(ggplot2)
 library(dplyr)
 ```
 
@@ -48,6 +48,9 @@ There are 288 cell lines contained in the data.
 2. What drug concentrations were used in each study?
 
 ```{r}
+
+## kable
+
 drugConcPerStudy <- select(pharmacoData, study, concentration, drug)
 drugConcPerStudy
 
@@ -64,8 +67,12 @@ summDrugConcPerStudy <- drugConcPerStudy %>%
     group_by(study) %>%
     summarize(meanDrugConc=mean(concentration), maxDrugConc=max(concentration), minDrugConc=min(concentration), concentration= n_distinct(concentration), drugTypes=n_distinct(drug), n())
 summDrugConcPerStudy
-```
 
+pharmacoData %>%
+    ggplot(aes(x = study, y = concentration, colour = drug)) +
+    geom_point()
+       
+```
 
 
 3. Histograms, appart from telling us how the data is
@@ -74,17 +81,70 @@ problems with the data. Plot a histogram
 of drug viabilities. Does it look as one would
 expect from the description of the data?
 
+
+```{r}
+pharmacoData %>%
+    ggplot(aes(x = log2(viability))) +
+    geom_histogram(fill = "gray", color = "black") +
+    facet_wrap(~ drug) +
+    ggtitle("Distributions of viability by drug")
+
+pharmacoData %>%
+    ggplot(aes(x = viability)) +
+    geom_histogram(aes( color = study, binwidth = 0.1)) +
+    facet_wrap(~ drug) +
+    ggtitle("Distributions of viability by drug")
+
+pharmacoData %>%
+    ggplot(aes(x = viability)) +
+    geom_density(aes( color = study)) +
+    facet_wrap(~ drug) +
+    ggtitle("Distributions of viability by drug")
+```
+
+
+
 4. How many viability data points are within the
 expected range according to the definition of viability (e.g. above 0 
 and below 100)? Try to come up with explanations about
 the values that are out of range. Are these due to technical
 issues? Biology?
 
+```{r}
+pharmacoData %>%
+    group_by(study) %>%
+    summarize(min_viability = min(viability),
+              max_viability = max(viability),
+              n_too_small = sum(viability < 0),
+              n_too_big = sum(viability > 100),
+              n_middle = sum(viability >0 & viability < 100))
+
+pharmacoData %>%
+    filter(viability < 0)
+```
+
+Biology / Tech issue... dont seem to be random... 
+
 5. Read the csv file containing the summarized data. What kinds
 of variables are in the data? What does each column represent?
 
+```{r}
+summarizedPharmacoData <- readRDS("data/summarizedPharmacoData.rds")
+str(summarizedPharmacoData)
+```
+
+
+
 6. Plot histograms of the viability scores at different levels of drug
 doses. Are stronger drug concentrations consistent with lower viability scores?
+
+```{r}
+ggplot(pharmacoData, aes(x = viability)) +
+    geom_histogram(aes(color = drug, binwidth = 0.1)) +
+    facet_wrap(~ doseID) +
+    ggtitle("Viability Scores vs Drug Doses")
+```
+
 
 ### Using Correlation Measures to Assess Replicability of Drug Response Studies
 
