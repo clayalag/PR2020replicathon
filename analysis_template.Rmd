@@ -520,17 +520,13 @@ ggplot(data=drugCorrs, aes(x=drug, y=matthews_corr)) +
 
 
 ```{r}
-rawFile <- "rawPharmacoData.csv"
-summarizedFile <- "summarizedPharmacoData.csv"
-if( !file.exists( rawFile ) ){
-    source("downloadData.R")
-}
-pharmacoData <- 
-summarizedData <- read.csv(summarizedFile)
+summarizedData <- summarizedPharmacoData
+pharmacoDat <- readRDS(file.path( "data", "rawPharmacoData.rds"))
+
 library(ggplot2)
 library(dplyr)
 plotResponse <- function(drugA, cellLineA, addPublishedIC50=TRUE ){
-  pharSub <- filter( pharmacoData, drug==drugA, cellLine==cellLineA )
+  pharSub <- filter( pharmacoDat, drug==drugA, cellLine==cellLineA )
   sumSub <- filter( summarizedData, drug==drugA, cellLine==cellLineA )
   p <- ggplot( pharSub, aes( log10(concentration), viability, col=study)) +
       geom_point(size=2.1) + geom_line(lwd=1.1) + ylim(0, 150)
@@ -574,7 +570,7 @@ getIC50Value <- function( fit ){
     { .$concentration[which.min( abs( .$viability - 50) )] }
 }
 fitLogisticModel <- function(drugA, cellLineA, studyA){
-    pharSub <- filter( pharmacoData, drug==drugA, cellLine==cellLineA, study==studyA)
+    pharSub <- filter( pharmacoDat, drug==drugA, cellLine==cellLineA, study==studyA)
     inRange <- pharSub$viability > 0 & pharSub$viability < 100
     pharSub$viability <- round(pharSub$viability)
     pharSub$concentration <- log10( pharSub$concentration )
