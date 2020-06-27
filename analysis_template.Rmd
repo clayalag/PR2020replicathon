@@ -334,13 +334,13 @@ ggplot(data=corrcomp, aes(x=x,y=y)) +
   ggtitle(paste0("Pearson = ", cor.pearson, ", Spearman = ", cor.spearman))+ xlab("CCLE AUC")+ ylab("GDSC AUC")+theme(plot.title = element_text(hjust = 0.5))
 ```
 ```{r}
-shapiro.test(cellLinesSummary$auc_CCLE)
-shapiro.test(cellLinesSummary$auc_GDSC)
+shapiro.test(summarizedPharmacoData$auc_CCLE)
+shapiro.test(summarizedPharmacoData$auc_GDSC)
 ```
 ```{r}
 library(plyr)
 library(dplyr)
-drugCorrs <- cellLinesSummary %>% 
+drugCorrs <- summarizedPharmacoData %>% 
     group_by(drug) %>% summarise (Pearson_auc=cor(auc_GDSC, auc_CCLE, method="pearson"), Spearman_auc=cor(auc_GDSC, auc_CCLE, method="spearman"))
 drugCorrs
 ```
@@ -359,10 +359,10 @@ ggplot(data=drugCorrs_AUC, aes(x=Drug, y=Correlation, fill=Measure, group=Measur
 7. We have explored Pearson and Spearman correlation, but what about other correlation measures? For example, you could try out distance correlation, which is sensitive to nonlinear relationships. You can find this measure in the `energy` R package, which you'll need to install and load with the following commands:
 
     ```{r, eval=FALSE}
-    install.packages("energy")
+    #install.packages("energy")
     #load(energy)
     library(energy)
-    dcor(cellLinesSummary$auc_CCLE, cellLinesSummary$auc_GDSC)
+    dcor(summarizedPharmacoData$auc_CCLE, summarizedPharmacoData$auc_GDSC)
     ```
 
     Then, you can compute distance correlation with the `dcor()` function. How does this correlation measure compare to Pearson and Spearman? Do your conclusions about the agreement between the two studies change at all using this measure?
@@ -409,29 +409,29 @@ summarizedPharmacoData %>%
 
 table("GDSC"=summarizedPharmacoData$sensitivity_GDSC, "CCLE"=summarizedPharmacoData$sensitivity_CCLE)
 
-cellLinesSummary <- cellLinesSummary %>% 
+summarizedPharmacoData <- summarizedPharmacoData %>% 
               mutate(cutoff = ifelse(drug=="paclitaxel", 0.4, 0.1)) %>%
               mutate(sensitivity_GDSC = factor(ifelse( auc_GDSC < cutoff, "Resistant", "Sensitive")), 
                      sensitivity_CCLE = factor(ifelse( auc_CCLE < cutoff, "Resistant", "Sensitive"))) 
 
-table("GDSC"=cellLinesSummary$sensitivity_GDSC, "CCLE"=cellLinesSummary$sensitivity_CCLE)
+table("GDSC"=summarizedPharmacoData$sensitivity_GDSC, "CCLE"=summarizedPharmacoData$sensitivity_CCLE)
 
-cellLinesSummary <- cellLinesSummary %>% 
+summarizedPharmacoData <- summarizedPharmacoData %>% 
               mutate(cutoff = ifelse(drug=="paclitaxel", 0.4, 0.1)) %>%
               mutate(sensitivity_GDSC = factor(ifelse( auc_GDSC < cutoff, "Resistant", "Sensitive")), 
                      sensitivity_CCLE = factor(ifelse( auc_CCLE < cutoff, "Resistant", "Sensitive"))) 
 
-table("GDSC"=cellLinesSummary$sensitivity_GDSC, "CCLE"=cellLinesSummary$sensitivity_CCLE)
+table("GDSC"=summarizedPharmacoData$sensitivity_GDSC, "CCLE"=summarizedPharmacoData$sensitivity_CCLE)
 
-cellLinesSummary <- cellLinesSummary %>% 
+summarizedPharmacoData <- summarizedPharmacoData %>% 
               mutate(category = paste(sensitivity_GDSC, sensitivity_CCLE)) %>%
               mutate(category = revalue(category, c("Resistant Resistant" = "Both Resistant",
                                                     "Sensitive Sensitive" = "Both Sensitive",
                                                     "Resistant Sensitive" = "GDSC Resistant / CCLE Sensitive",
                                                     "Sensitive Resistant" = "GDSC Sensitive / CCLE Resistant")))
-table(cellLinesSummary$category)
+table(summarizedPharmacoData$category)
 
-ggplot(aes(x=auc_GDSC, y=auc_CCLE, colour=category), data=cellLinesSummary) +
+ggplot(aes(x=auc_GDSC, y=auc_CCLE, colour=category), data=summarizedPharmacoData) +
     geom_point(cex=0.5) + 
     facet_wrap(facets=~drug) +
     xlab("GDSC AUC") +
@@ -448,7 +448,7 @@ ggplot(aes(x=auc_GDSC, y=auc_CCLE, colour=category), data=cellLinesSummary) +
 
 ```{r}
 
-str(cellLinesSummary)
+str(summarizedPharmacoData)
 mcc <- function (study1, study2)
 {
   BS <- sum(study1 == "Sensitive" & study2 == "Sensitive") 
@@ -463,7 +463,7 @@ mcc <- function (study1, study2)
   }
   return(mcc)
 }
-drugCorrs <- cellLinesSummary %>% 
+drugCorrs <- summarizedPharmacoData %>% 
   group_by(drug) %>% 
   summarise(matthews_corr=mcc(sensitivity_GDSC, sensitivity_CCLE))
 drugCorrs
@@ -525,7 +525,7 @@ summarizedFile <- "summarizedPharmacoData.csv"
 if( !file.exists( rawFile ) ){
     source("downloadData.R")
 }
-pharmacoData <- read.csv(rawFile)
+pharmacoData <- 
 summarizedData <- read.csv(summarizedFile)
 library(ggplot2)
 library(dplyr)
