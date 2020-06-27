@@ -206,50 +206,6 @@ drugCorrs %>%
     ggtitle("Correlation of cell line AUC summaries between studies for each drug")
 
 drugCorrs
-#x <- rnorm(50)
-#perfect <- data.frame(x=, y=x)
-Pearson_auc  = cor((summarizedPharmacoData$auc_GDSC), (summarizedPharmacoData$auc_CCLE), method = "pearson")
-Spearman_auc = cor(-log10(summarizedPharmacoData$auc_GDSC), -log10(summarizedPharmacoData$auc_CCLE), method = "spearman")
-#Pearson_AUC_GDSC <- cor((summarizedPharmacoData$auc_GDSC), method = "pearson")
-#Pearson_AUC_CCLE <- cor((summarizedPharmacoData$auc_CCLE), method = "pearson")
-cor.coef <- round(cor((summarizedPharmacoData$auc_GDSC), (summarizedPharmacoData$auc_CCLE), method = "pearson"))
-ggplot(data=drugCorrs, aes(x=Pearson_auc,y=Spearman_auc)) +
-  geom_point() +
-  ggtitle(paste0("Correlation coefficient = ", cor.coef)) + 
-  geom_smooth(method='lm', se=FALSE)
-
-drugCorrs <- gather(drugCorrs, measure, correlation, -drug)
-
-drugCorrs
-
-drugCorrs %>%
-    ggplot(aes(x = drug, y = correlation, fill = measure, group = measure)) +
-    geom_bar(stat = "identity", position = position_dodge(), colour = "black") + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    scale_fill_grey() +
-    ylim(0, 1) + 
-    ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
-
-#label = drug
-#geom_text() +
-
-drugCorrs %>%
-    ggplot(aes(x = Pearson_auc, y = Spearman_auc, label = drug)) +
-    geom_point(alpha = 1/2) +
-    geom_text() +
-    ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
-
-#drugCorrs <- gather(drugCorrs, measure, correlation, -drug)
-
-drugCorrs
-
-drugCorrs %>%
-    ggplot(aes(x = drug, y = correlation, fill = measure, group = measure)) +
-    geom_bar(stat = "identity", position = position_dodge(), colour = "black") + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    scale_fill_grey() +
-    ylim(0, 1) + 
-    ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
 
 ```
 
@@ -283,12 +239,7 @@ ggplot(data=cellLinesSummary, aes(x=auc_GDSC,y=auc_CCLE)) +
   ggtitle(paste0("Correlation coefficient = ", cor.coef)) + 
   geom_smooth(method='lm', se=FALSE) +theme(plot.title = element_text(hjust = 0.5))
 
-set.seed(920)
-cor.coef <- round(cor(cellLinesSummary$ic50_CCLE, cellLinesSummary$ic50_GDSC),2)
-ggplot(data=cellLinesSummary, aes(x=-log10(ic50_GDSC),y=-log10(ic50_CCLE))) +
-  geom_point() +
-  ggtitle(paste0("Correlation coefficient = ", cor.coef)) + 
-  geom_smooth(method='lm', se=FALSE) +theme(plot.title = element_text(hjust = 0.5))
+
 ```
 
 
@@ -296,6 +247,32 @@ ggplot(data=cellLinesSummary, aes(x=-log10(ic50_GDSC),y=-log10(ic50_CCLE))) +
 5. Which drug do you think shows the most consistency between the studies? How about the least? 
 
 ```{r}
+summarizedPharmacoData <- summarizedPharmacoData %>% 
+              mutate(cutoff = ifelse(drug == "paclitaxel", 0.4, 0.1),
+                     sensitivity_GDSC = factor(ifelse( auc_GDSC < cutoff, "Resistant", "Sensitive")), 
+                     sensitivity_CCLE = factor(ifelse( auc_CCLE < cutoff, "Resistant", "Sensitive"))) 
+
+table("GDSC" = summarizedPharmacoData$sensitivity_GDSC,
+      "CCLE" = summarizedPharmacoData$sensitivity_CCLE)
+
+summarizedPharmacoData <-
+    summarizedPharmacoData %>% 
+    mutate(category = paste(sensitivity_GDSC, sensitivity_CCLE),
+           category = fct_recode(category,
+                                 "Both Resistant" = "Resistant Resistant",
+                                 "Both Sensitive" = "Sensitive Sensitive",
+                                 "GDSC Resistant / CCLE Sensitive" = "Resistant Sensitive",
+                                 "GDSC Sensitive / CCLE Resistant" = "Sensitive Resistant"))
+table(summarizedPharmacoData$category)
+
+ggplot(summarizedPharmacoData, aes(x = auc_GDSC, y = auc_CCLE, colour = category)) +
+    geom_point(cex = 0.5) + 
+    facet_wrap(~ drug) +
+    xlab("GDSC AUC") +
+    ylab("CCLE AUC") +
+    geom_hline(aes(yintercept = cutoff), colour = "grey", alpha = 0.75, lty = 2) +
+    geom_vline(aes(xintercept = cutoff), colour = "grey", alpha = 0.75, lty = 2) +
+    ggtitle("Cell line sensitivity classifications between studies")
 
 mcc <- function (study1, study2)
 {
@@ -315,14 +292,14 @@ mcc <- function (study1, study2)
 drugCorrs <- summarizedPharmacoData %>% 
   group_by(drug) %>% 
   summarise(studies_corr=mcc(sensitivity_GDSC, sensitivity_CCLE))
-
 drugCorrs
 
-ggplot(data=drugCorrs, aes(x=drug, y=studies_corr)) +
-  geom_bar(stat="identity") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  xlab("Drug")+
-  ylab("Correlation Coefficient")
+
+ggplot(drugCorrs, aes(x = drug, y = matthews_corr)) +
+    geom_bar(stat = "identity") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    xlab("Drug") +
+    ylab("Matthews Correlation Coefficient")
 ```
 
 
@@ -383,7 +360,7 @@ ggplot(data=drugCorrs_AUC, aes(x=Drug, y=Correlation, fill=Measure, group=Measur
 
     ```{r, eval=FALSE}
     install.packages("energy")
-    load(energy)
+    #load(energy)
     library(energy)
     dcor(cellLinesSummary$auc_CCLE, cellLinesSummary$auc_GDSC)
     ```
@@ -398,8 +375,8 @@ ggplot(data=drugCorrs_AUC, aes(x=Drug, y=Correlation, fill=Measure, group=Measur
 ```{r}
 library(tidyr)
 library(dplyr)
-fileName <- "summarizedPharmacoData.csv"
-pharmacoData <- read.csv(fileName)
+
+pharmacoData <- readRDS("~/Documents/internship2020/PR2020replicathon/data/summarizedPharmacoData.rds")
 
 drugAvg <- pharmacoData %>% 
               group_by(cellLine) %>%
