@@ -188,12 +188,14 @@ ggplot(summarizedPharmacoData, aes(x = auc_GDSC, y = auc_CCLE, col = drug)) +
 
 ```{r}
 library(tidyverse)
-drugCorrs <- summarizedPharmacoData %>% 
+summarizedPharmacoDat <- readRDS("data/summarizedPharmacoData.rds")
+
+drugCorrs <- summarizedPharmacoDat %>% 
     group_by(drug) %>%
     summarize(Pearson_auc  = cor((auc_GDSC), (auc_CCLE), method = "pearson"), Spearman_auc = cor(-log10(auc_GDSC), -log10(auc_CCLE), method = "spearman"))
 
 drugCorrs
-drugCorrs <- tidyr::gather(drugCorrs, measure, correlation, -drug)
+drugCorrs <- gather(drugCorrs, measure, correlation, -drug)
 
 drugCorrs
 
@@ -213,7 +215,8 @@ drugCorrs
 4. Does the AUC or IC50 suggest more agreement between the studies? 
 
 ```{r}
-drugCorrs <- summarizedPharmacoData %>% 
+summarizedPharmacoDat <- readRDS("data/summarizedPharmacoData.rds")
+drugCorrs <- summarizedPharmacoDat %>% 
     group_by(drug) %>%
     summarize(Pearson_ic50  = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "pearson"),
               Spearman_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "spearman"))
@@ -233,7 +236,7 @@ drugCorrs %>%
     ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
 
 set.seed(920)
-cor.coef <- round(cor(([pharmacoData$cellLines]$auc_CCLE), ([pharmacoData$cellLines]$auc_GDSC),2)
+cor.coef <- round(cor((pharmacoData$cellLines$auc_CCLE), (pharmacoData$cellLines$auc_GDSC),2))
 ggplot(data=cellLinesSummary, aes(x=auc_GDSC,y=auc_CCLE)) +
   geom_point() +
   ggtitle(paste0("Correlation coefficient = ", cor.coef)) + 
@@ -247,6 +250,7 @@ ggplot(data=cellLinesSummary, aes(x=auc_GDSC,y=auc_CCLE)) +
 5. Which drug do you think shows the most consistency between the studies? How about the least? 
 
 ```{r}
+summarizedPharmacoData <- readRDS("data/summarizedPharmacoData.rds")
 summarizedPharmacoData <- summarizedPharmacoData %>% 
               mutate(cutoff = ifelse(drug == "paclitaxel", 0.4, 0.1),
                      sensitivity_GDSC = factor(ifelse( auc_GDSC < cutoff, "Resistant", "Sensitive")), 
@@ -308,6 +312,7 @@ ggplot(drugCorrs, aes(x = drug, y = matthews_corr)) +
 
 ```{r}
 # Same
+summarizedPharmacoDat <- readRDS("data/summarizedPharmacoData.rds")
 x <- rnorm(50,0,1)
 corrcomp <- data.frame(x=x, y=x+rnorm(50,0,1))
 cor.pearson <- round(cor(corrcomp$x, corrcomp$y, method="pearson"),2)
@@ -326,7 +331,7 @@ ggplot(data=corrcomp, aes(x=x,y=y)) +
   geom_point() +
   ggtitle(paste0("Pearson = ", cor.pearson, ", Spearman = ", cor.spearman))
 
-corrcomp <- data.frame(x=cellLinesSummary$auc_CCLE, y=cellLinesSummary$auc_GDSC)
+corrcomp <- data.frame(x=summarizedPharmacoDat$auc_CCLE, y=summarizedPharmacoDat$auc_GDSC)
 cor.pearson <- round(cor(corrcomp$x, corrcomp$y, method="pearson"),2)
 cor.spearman <- round(cor(corrcomp$x, corrcomp$y, method="spearman"),2)
 ggplot(data=corrcomp, aes(x=x,y=y)) +
@@ -362,7 +367,7 @@ ggplot(data=drugCorrs_AUC, aes(x=Drug, y=Correlation, fill=Measure, group=Measur
     #install.packages("energy")
     #load(energy)
     library(energy)
-    dcor(summarizedPharmacoData$auc_CCLE, summarizedPharmacoData$auc_GDSC)
+    dcor(summarizedPharmacoDat$auc_CCLE, summarizedPharmacoData$auc_GDSC)
     ```
 
     Then, you can compute distance correlation with the `dcor()` function. How does this correlation measure compare to Pearson and Spearman? Do your conclusions about the agreement between the two studies change at all using this measure?
