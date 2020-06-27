@@ -123,7 +123,8 @@ pharmacoData %>%
     filter(viability < 0)
 ```
 
-Biology / Tech issue... dont seem to be random... 
+Biology / Tech issue... don't seem to be random... 
+
 
 5. Read the csv file containing the summarized data. What kinds
 of variables are in the data? What does each column represent?
@@ -180,7 +181,7 @@ ggplot(summarizedPharmacoData, aes(x = auc_GDSC, y = auc_CCLE, col = drug)) +
 ```{r}
 drugCorrs <- summarizedPharmacoData %>% 
     group_by(drug) %>%
-    summarize(Pearson_ic50  = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "pearson"), Spearman_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "spearman"))
+    summarize(Pearson_ic50  = cor(-log10(auc_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "pearson"), Spearman_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "spearman"))
 
 drugCorrs
 
@@ -203,6 +204,11 @@ drugCorrs %>%
     ylim(0, 1) + 
     ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
 
+
+
+drugCorrs <- summarizedData %>% group_by(drug) %>% summarize(Pearson_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "pearson"), Spearman_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "spearman")) #prepping the correlation coefficient data for graph drugCorrs drugCorrs <- gather(drugCorrs, measure, correlation, -drug) drugCorrs
+
+drugCorrs %>% ggplot(aes(x = drug, y = correlation, fill = measure, group = measure)) + geom_bar(stat = "identity", position = position_dodge(), colour = "black") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_fill_grey() + ylim(0, 1) + ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
 ```
 
 
@@ -215,7 +221,7 @@ ggplot(aes(x=auc_GDSC, y=auc_CCLE), data=subset(summarizedPharmacoData, drug=="A
     ylab("CCLE AUC") 
 
 set.seed(920)
-cor.coef <- round(cor(cellLinesSummary$auc_CCLE, cellLinesSummary$auc_GDSC),2)
+cor.coef <- round(cor(([pharmacoData$cellLines]$auc_CCLE), ([pharmacoData$cellLines]$auc_GDSC),2)
 ggplot(data=cellLinesSummary, aes(x=auc_GDSC,y=auc_CCLE)) +
   geom_point() +
   ggtitle(paste0("Correlation coefficient = ", cor.coef)) + 
@@ -604,6 +610,12 @@ filter( summarizedData, drug=="Nilotinib", cellLine=="22RV1")
 
 
 3. Are the results more replicable if one uses the same code to calculate IC50 or AUC on the different datasets? Hint: you can use code from Tutorial 2a to evaluate this.
+
+```{r}
+
+```
+
+
 
 4. Summarize the viability curves of all the drugs in each cell-line using the slope of linear model. Is the slope of the linear regression informative of the drug response? Can we improve the replicability of the studies by using the value of the slope instead of IC50s or AUCs? 
 
