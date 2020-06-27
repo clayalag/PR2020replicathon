@@ -223,7 +223,7 @@ drugCorrs <- summarizedPharmacoDat %>%
 
 drugCorrs
 
-drugCorrs <- tidyr::gather(drugCorrs, measure, correlation, -drug)
+drugCorrs <- gather(drugCorrs, measure, correlation, -drug)
 
 drugCorrs
 
