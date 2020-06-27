@@ -56,16 +56,16 @@ drugConcPerStudy
 
 drugConcPerStudy %>%
     group_by(study, concentration, drug) %>%
-    summarize(n())
+    dplyr::summarize(n())
 
 allDrugConcPerStudy <- drugConcPerStudy %>%
     group_by(study, drug) %>%
-    summarize(meanDrugConc=mean(concentration), maxDrugConc=max(concentration), minDrugConc=min(concentration), n())
+    dplyr::summarize(meanDrugConc=mean(concentration), maxDrugConc=max(concentration), minDrugConc=min(concentration), n())
 allDrugConcPerStudy
 
 summDrugConcPerStudy <- drugConcPerStudy %>%
     group_by(study) %>%
-    summarize(meanDrugConc=mean(concentration), maxDrugConc=max(concentration), minDrugConc=min(concentration), concentration= n_distinct(concentration), drugTypes=n_distinct(drug), n())
+    dplyr::summarize(meanDrugConc=mean(concentration), maxDrugConc=max(concentration), minDrugConc=min(concentration), concentration= n_distinct(concentration), drugTypes=n_distinct(drug), n())
 summDrugConcPerStudy
 
 pharmacoData %>%
@@ -158,6 +158,14 @@ ggplot(summarizedPharmacoData, aes(x = auc_GDSC, y = auc_CCLE, col = drug)) +
     xlab("GDSC AUC") +
     ylab("CCLE AUC") +
     ggtitle("Comparing AUC in GDSC and CCLE for all cell lines")
+
+summarizedPharmacoData %>%
+    ggplot(aes(x = -log10(auc_GDSC), y = -log10(auc_CCLE))) +
+    geom_point(alpha = 1/2, cex = 1/2) + 
+    facet_wrap(~ drug) +
+    xlab("-log10(GDSC AUC)") +
+    ylab("-log10(CCLE AUC)") +
+    ggtitle("AUC summaries of cell line response across studies")
 ```
 
 
@@ -179,18 +187,36 @@ ggplot(summarizedPharmacoData, aes(x = auc_GDSC, y = auc_CCLE, col = drug)) +
 3. Based on the scatterplot and correlation values, would you say that they tend to agree? Why or why not?
 
 ```{r}
+library(tidyverse)
 drugCorrs <- summarizedPharmacoData %>% 
     group_by(drug) %>%
-    summarize(Pearson_ic50  = cor(-log10(auc_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "pearson"), Spearman_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "spearman"))
+    summarize(Pearson_auc  = cor((auc_GDSC), (auc_CCLE), method = "pearson"), Spearman_auc = cor(-log10(auc_GDSC), -log10(auc_CCLE), method = "spearman"))
+
+drugCorrs
+drugCorrs <- tidyr::gather(drugCorrs, measure, correlation, -drug)
 
 drugCorrs
 
 drugCorrs %>%
-  tidyr::spread(measure, correlation) %>%
-  ggplot(aes(x = Pearson_ic50, y = Spearman_ic50, label = drug)) +
-    geom_point(alpha = 1/2) +
-    geom_text() +
-    ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
+    ggplot(aes(x = drug, y = correlation, fill = measure, group = measure)) +
+    geom_bar(stat = "identity", position = position_dodge(), colour = "black") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_grey() +
+    ylim(0, 1) + 
+    ggtitle("Correlation of cell line AUC summaries between studies for each drug")
+
+drugCorrs
+#x <- rnorm(50)
+#perfect <- data.frame(x=, y=x)
+Pearson_auc  = cor((summarizedPharmacoData$auc_GDSC), (summarizedPharmacoData$auc_CCLE), method = "pearson")
+Spearman_auc = cor(-log10(summarizedPharmacoData$auc_GDSC), -log10(summarizedPharmacoData$auc_CCLE), method = "spearman")
+#Pearson_AUC_GDSC <- cor((summarizedPharmacoData$auc_GDSC), method = "pearson")
+#Pearson_AUC_CCLE <- cor((summarizedPharmacoData$auc_CCLE), method = "pearson")
+cor.coef <- round(cor((summarizedPharmacoData$auc_GDSC), (summarizedPharmacoData$auc_CCLE), method = "pearson"))
+ggplot(data=drugCorrs, aes(x=Pearson_auc,y=Spearman_auc)) +
+  geom_point() +
+  ggtitle(paste0("Correlation coefficient = ", cor.coef)) + 
+  geom_smooth(method='lm', se=FALSE)
 
 drugCorrs <- gather(drugCorrs, measure, correlation, -drug)
 
@@ -204,21 +230,51 @@ drugCorrs %>%
     ylim(0, 1) + 
     ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
 
+#label = drug
+#geom_text() +
 
+drugCorrs %>%
+    ggplot(aes(x = Pearson_auc, y = Spearman_auc, label = drug)) +
+    geom_point(alpha = 1/2) +
+    geom_text() +
+    ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
 
-drugCorrs <- summarizedData %>% group_by(drug) %>% summarize(Pearson_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "pearson"), Spearman_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "spearman")) #prepping the correlation coefficient data for graph drugCorrs drugCorrs <- gather(drugCorrs, measure, correlation, -drug) drugCorrs
+#drugCorrs <- gather(drugCorrs, measure, correlation, -drug)
 
-drugCorrs %>% ggplot(aes(x = drug, y = correlation, fill = measure, group = measure)) + geom_bar(stat = "identity", position = position_dodge(), colour = "black") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_fill_grey() + ylim(0, 1) + ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
+drugCorrs
+
+drugCorrs %>%
+    ggplot(aes(x = drug, y = correlation, fill = measure, group = measure)) +
+    geom_bar(stat = "identity", position = position_dodge(), colour = "black") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_grey() +
+    ylim(0, 1) + 
+    ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
+
 ```
 
 
 4. Does the AUC or IC50 suggest more agreement between the studies? 
 
 ```{r}
-ggplot(aes(x=auc_GDSC, y=auc_CCLE), data=subset(summarizedPharmacoData, drug=="AZD0530")) +
-    geom_point() +
-    xlab("GDSC AUC") +
-    ylab("CCLE AUC") 
+drugCorrs <- summarizedPharmacoData %>% 
+    group_by(drug) %>%
+    summarize(Pearson_ic50  = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "pearson"),
+              Spearman_ic50 = cor(-log10(ic50_GDSC / 10^6), -log10(ic50_CCLE / 10^6), method = "spearman"))
+
+drugCorrs
+
+drugCorrs <- tidyr::gather(drugCorrs, measure, correlation, -drug)
+
+drugCorrs
+
+drugCorrs %>%
+    ggplot(aes(x = drug, y = correlation, fill = measure, group = measure)) +
+    geom_bar(stat = "identity", position = position_dodge(), colour = "black") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_grey() +
+    ylim(0, 1) + 
+    ggtitle("Correlation of cell line IC50 summaries between studies for each drug")
 
 set.seed(920)
 cor.coef <- round(cor(([pharmacoData$cellLines]$auc_CCLE), ([pharmacoData$cellLines]$auc_GDSC),2)
