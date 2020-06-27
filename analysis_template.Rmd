@@ -1,8 +1,8 @@
 ---
-title: "Insert your team name here"
+title: PR2020Replicathon
 output: html_document
 date: Replicathon 2020
-author: Team members names
+authors: "Luisa Paris, Sergio Mares, and Christopher Ayala"
 ---
 
 ```{r setup, include=FALSE}
